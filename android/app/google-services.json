@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "485967798887",
+    "project_id": "wisata-indonesia-app-92284",
+    "storage_bucket": "wisata-indonesia-app-92284.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485967798887:android:cb8b5e2cfc0bb09bec2ac2",
+        "android_client_info": {
+          "package_name": "com.example.wisata_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwpVXTGqBcLqyfbqjrO0JWnBU_6uAd_cE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
