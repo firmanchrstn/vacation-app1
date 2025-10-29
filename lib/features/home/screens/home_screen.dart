@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:wisata_application/data/models/destination_model.dart';
-import 'package:wisata_application/features/detail/screens/detail_screen.dart';
-import 'package:wisata_application/core/theme/app_colors.dart';
+import 'package:wisata_application/data/models/destination_model.dart'; // Assuming destination_model.dart exists
+import 'package:wisata_application/features/detail/screens/detail_screen.dart'; // Assuming detail_screen.dart exists
+import 'package:wisata_application/core/theme/app_colors.dart'; // Assuming app_colors.dart exists
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,8 +13,9 @@ class HomeScreen extends StatelessWidget {
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     if (userId == null) {
+      // --- TRANSLATED ---
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Anda harus login untuk menambah favorit'), backgroundColor: AppColors.error),
+        const SnackBar(content: Text('You must be logged in to add favorites'), backgroundColor: AppColors.error),
       );
       return;
     }
@@ -27,12 +28,14 @@ class HomeScreen extends StatelessWidget {
 
     try {
       await favoriteRef.set(destinasiData);
+      // --- TRANSLATED ---
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berhasil ditambahkan ke favorit!'), backgroundColor: AppColors.success),
+        const SnackBar(content: Text('Successfully added to favorites!'), backgroundColor: AppColors.success),
       );
     } catch (e) {
+      // --- TRANSLATED ---
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menambah favorit: $e'), backgroundColor: AppColors.error),
+        SnackBar(content: Text('Failed to add favorite: $e'), backgroundColor: AppColors.error),
       );
     }
   }
@@ -46,7 +49,7 @@ class HomeScreen extends StatelessWidget {
 
   void _navigateToExploreTab(BuildContext context) {
     final TabController? tabController = DefaultTabController.of(context);
-    if (tabController != null && tabController.index != 1) {
+    if (tabController != null && tabController.index != 1) { // Navigate to Explore tab (index 1)
       tabController.animateTo(1);
     } else {
        print("TabController not found or already on Explore tab");
@@ -57,10 +60,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final Stream<QuerySnapshot> destinasiStream =
         FirebaseFirestore.instance.collection('destinasi').snapshots();
-        
+
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
-    final DocumentReference? userRef = userId != null 
-        ? FirebaseFirestore.instance.collection('users').doc(userId) 
+    final DocumentReference? userRef = userId != null
+        ? FirebaseFirestore.instance.collection('users').doc(userId)
         : null;
 
     return Scaffold(
@@ -82,9 +85,10 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StreamBuilder<DocumentSnapshot>(
-                      stream: userRef?.snapshots(), 
+                      stream: userRef?.snapshots(),
                       builder: (context, snapshot) {
-                        String userName = 'Petualang';
+                        // --- TRANSLATED ---
+                        String userName = 'Adventurer'; // Default name
                         String firstLetter = '?';
                         if (snapshot.hasData && snapshot.data!.exists) {
                           final data = snapshot.data!.data() as Map<String, dynamic>?;
@@ -94,18 +98,20 @@ class HomeScreen extends StatelessWidget {
                             firstLetter = _getFirstLetter(userName);
                           }
                         } else if (userId == null) {
-                           userName = 'Tamu';
-                           firstLetter = 'T';
+                           // --- TRANSLATED ---
+                           userName = 'Guest';
+                           firstLetter = 'G';
                         }
-                        
+
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Halo, $userName!', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textDark)),
+                            // --- TRANSLATED ---
+                            Text('Hello, $userName!', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textDark)),
                             InkWell(
                               onTap: () {
                                 final TabController? tabController = DefaultTabController.of(context);
-                                if (tabController != null && tabController.index != 4) {
+                                if (tabController != null && tabController.index != 4) { // Navigate to Profile tab (index 4)
                                   tabController.animateTo(4);
                                 } else {
                                   print("TabController not found or already on Profile tab");
@@ -126,7 +132,8 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 5),
-                    Text('Temukan Destinasi Impian Anda', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
+                    // --- TRANSLATED ---
+                    Text('Find Your Dream Destination', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
                   ],
                 ),
               ),
@@ -137,7 +144,8 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Cari tempat wisata...',
+                    // --- TRANSLATED ---
+                    hintText: 'Search destinations...',
                     prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                     suffixIcon: const Icon(Icons.mic_none_rounded, color: AppColors.textMedium),
                     filled: true,
@@ -158,8 +166,9 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildListDelegate(
                 [
                   _buildSectionTitle(
-                    context, 
-                    'Destinasi Unggulan', 
+                    context,
+                    // --- TRANSLATED ---
+                    'Featured Destinations',
                     () => _navigateToExploreTab(context)
                   ),
                   const SizedBox(height: 15),
@@ -172,17 +181,18 @@ class HomeScreen extends StatelessWidget {
                           return Center(child: CircularProgressIndicator(color: AppColors.primary));
                         }
                         if (snapshot.hasError) {
-                          return Center(child: Text('Gagal memuat data', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
+                          // --- TRANSLATED ---
+                          return Center(child: Text('Failed to load data', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
                         }
                         if (snapshot.data!.docs.isEmpty) {
-                          return Center(child: Text('Belum ada destinasi', style: Theme.of(context).textTheme.bodyLarge));
+                          // --- TRANSLATED ---
+                          return Center(child: Text('No destinations yet', style: Theme.of(context).textTheme.bodyLarge));
                         }
 
-                        // PASTIKAN ListView.builder LENGKAP
                         return ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (context, index) { // itemBuilder SUDAH ADA
+                          itemBuilder: (context, index) {
                             var doc = snapshot.data!.docs[index];
                             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                             return _buildRecommendationCard(context, data, doc.id);
@@ -207,8 +217,8 @@ class HomeScreen extends StatelessWidget {
     String documentId,
   ) {
     final DestinationModel destination = DestinationModel.fromMap(documentId, data);
-    final String title = destination.nama;
-    final String location = destination.lokasi;
+    final String title = destination.nama; // Keep name as is
+    final String location = destination.lokasi; // Keep location as is
     final String rating = destination.rating.toStringAsFixed(1);
     final String imageUrl = destination.imageUrl;
 
@@ -233,7 +243,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.network( 
+                  child: Image.network(
                     imageUrl,
                     height: 160,
                     width: double.infinity,
@@ -270,13 +280,14 @@ class HomeScreen extends StatelessWidget {
                     child: IconButton(
                       icon: const Icon(Icons.favorite_border_rounded, color: Colors.redAccent),
                       onPressed: () { _addFavorite(data, documentId, context); },
-                      tooltip: 'Tambah ke Favorit',
+                      // --- TRANSLATED ---
+                      tooltip: 'Add to Favorites',
                     ),
                   ),
                 ),
               ],
             ),
-            
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               child: Column(
@@ -303,7 +314,8 @@ class HomeScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: Theme.of(context).textTheme.titleLarge),
-        TextButton(onPressed: onViewAll, child: const Text('Lihat Semua')),
+        // --- TRANSLATED ---
+        TextButton(onPressed: onViewAll, child: const Text('View All')),
       ],
     );
   }

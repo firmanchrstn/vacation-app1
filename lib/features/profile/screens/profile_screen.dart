@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:wisata_application/core/theme/app_colors.dart';
+import 'package:wisata_application/core/theme/app_colors.dart'; // Assuming app_colors.dart exists
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,9 +12,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
-  
+
   final String? userId = FirebaseAuth.instance.currentUser?.uid;
-  // Inisialisasi referensi dokumen pengguna
+  // Initialize user document reference
   late final DocumentReference _userRef;
 
   @override
@@ -26,54 +26,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Fungsi untuk memuat data awal atau membuat dokumen baru
+  // Function to load initial data or create a new document
   void _loadUserData() async {
-    // Jika userId null (belum login), tidak ada yang dilakukan
-    if (userId == null) return; 
+    // If userId is null (not logged in), do nothing
+    if (userId == null) return;
 
     final userData = await _userRef.get();
     if (userData.exists) {
       final data = userData.data() as Map<String, dynamic>;
-      // Isi controller dengan nama yang tersimpan
-      _nameController.text = data['nama'] ?? ''; 
+      // Fill controller with saved name
+      _nameController.text = data['nama'] ?? '';
     } else {
-      // Jika dokumen belum ada, buat dokumen baru dengan email
+      // If document doesn't exist, create a new one with email
       await _userRef.set({
-        'email': FirebaseAuth.instance.currentUser!.email, 
-        'nama': '',
+        'email': FirebaseAuth.instance.currentUser!.email,
+        'nama': '', // Initially empty name
       });
       _nameController.text = '';
     }
-    setState(() {});
+    // Check if the widget is still mounted before calling setState
+    if(mounted) {
+      setState(() {});
+    }
   }
 
-  // Fungsi untuk menyimpan nama ke Firestore
+  // Function to save name to Firestore
   Future<void> _updateUserName() async {
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda harus login untuk menyimpan data.'), backgroundColor: AppColors.error));
+      // --- TRANSLATED ---
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must be logged in to save data.'), backgroundColor: AppColors.error));
       return;
     }
 
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama tidak boleh kosong.'), backgroundColor: AppColors.error));
+      // --- TRANSLATED ---
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name cannot be empty.'), backgroundColor: AppColors.error));
       return;
     }
 
     try {
-      // Update hanya field 'nama'
-      await _userRef.update({'nama': _nameController.text.trim()}); 
+      // Update only the 'nama' field
+      await _userRef.update({'nama': _nameController.text.trim()});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama berhasil diupdate!'), backgroundColor: AppColors.success));
+        // --- TRANSLATED ---
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name updated successfully!'), backgroundColor: AppColors.success));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal update: $e'), backgroundColor: AppColors.error));
+        // --- TRANSLATED ---
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e'), backgroundColor: AppColors.error));
       }
     }
   }
 
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
+    // AuthGate will handle navigation after logout
   }
 
   @override
@@ -84,30 +92,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Jika belum login, tampilkan pesan error
+    // If not logged in, show error message
     if (userId == null) {
-      return Scaffold(appBar: AppBar(title: Text('Profil Saya')), body: Center(child: Text('Silakan login untuk melihat profil.')));
+      // --- TRANSLATED ---
+      return Scaffold(appBar: AppBar(title: Text('My Profile')), body: Center(child: Text('Please log in to view profile.')));
     }
-    
+
+    // StreamBuilder to listen for real-time user data changes
     return StreamBuilder<DocumentSnapshot>(
-      // Memantau perubahan data pengguna secara real-time
       stream: _userRef.snapshots(),
       builder: (context, snapshot) {
-        String userName = 'Memuat...';
-        String userEmail = FirebaseAuth.instance.currentUser?.email ?? 'Tidak ada email';
-        
+        // --- TRANSLATED ---
+        String userName = 'Loading...';
+        String userEmail = FirebaseAuth.instance.currentUser?.email ?? 'No email available';
+
         if (snapshot.hasData && snapshot.data!.exists) {
-          userName = (snapshot.data!.data() as Map<String, dynamic>?)?['nama'] ?? 'Pengguna Baru';
+          // --- TRANSLATED ---
+          userName = (snapshot.data!.data() as Map<String, dynamic>?)?['nama'] ?? 'New User';
+          if (userName.trim().isEmpty) {
+            userName = 'New User';
+          }
+        } else if (snapshot.connectionState != ConnectionState.waiting && !snapshot.hasError) {
+          // If document doesn't exist yet but user is logged in
+           userName = 'New User';
         }
-        
-        // Tampilkan loading saat data belum siap
-        if (snapshot.connectionState == ConnectionState.waiting) {
-             userName = _nameController.text.isEmpty ? 'Pengguna' : _nameController.text;
+
+
+        // Show loading state while data is not ready
+        if (snapshot.connectionState == ConnectionState.waiting && userName == 'Loading...') {
+          // You might want a better loading indicator here, but keep name field populated if already loaded once
+          userName = _nameController.text.isEmpty ? 'Loading...' : _nameController.text;
         }
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(title: Text('Profil Saya', style: Theme.of(context).textTheme.titleLarge)),
+          // --- TRANSLATED ---
+          appBar: AppBar(title: Text('My Profile', style: Theme.of(context).textTheme.titleLarge)),
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
@@ -116,32 +136,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(radius: 60, backgroundColor: AppColors.primary.withOpacity(0.1), child: Icon(Icons.person_rounded, size: 70, color: AppColors.primary)),
                   const SizedBox(height: 20),
-                  // Tampilkan nama dari Firestore/Stream
-                  Text(userName, style: Theme.of(context).textTheme.headlineSmall), 
+                  // Display name from Firestore/Stream
+                  Text(userName, style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 5),
                   Text(userEmail, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
                   const SizedBox(height: 40),
 
-                  // Form Update Nama
+                  // Update Name Form
                   TextField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                      labelText: 'Nama Lengkap',
+                      // --- TRANSLATED ---
+                      labelText: 'Full Name',
                       prefixIcon: Icon(Icons.edit_outlined, color: AppColors.primary),
-                      suffixIcon: IconButton(icon: Icon(Icons.save_rounded, color: AppColors.primary), onPressed: _updateUserName, tooltip: 'Simpan Nama'),
+                      // --- TRANSLATED ---
+                      suffixIcon: IconButton(icon: Icon(Icons.save_rounded, color: AppColors.primary), onPressed: _updateUserName, tooltip: 'Save Name'),
                     ),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 25),
-                  SizedBox(width: double.infinity, child: ElevatedButton.icon(onPressed: _updateUserName, icon: const Icon(Icons.save_rounded), label: const Text('Simpan Perubahan'))),
+                  SizedBox(
+                    width: double.infinity,
+                    // --- TRANSLATED ---
+                    child: ElevatedButton.icon(onPressed: _updateUserName, icon: const Icon(Icons.save_rounded), label: const Text('Save Changes'))
+                  ),
                   const SizedBox(height: 40),
-                  
-                  // Tombol Logout
+
+                  // Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _logout,
                       icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 24),
+                      // --- TRANSLATED ---
                       label: Text('Logout', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.error)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),

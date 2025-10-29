@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:wisata_application/features/auth/screens/signup_screen.dart';
+import 'package:wisata_application/features/auth/screens/signup_screen.dart'; // Assuming signup_screen is also translated or uses localization
 import 'package:wisata_application/core/theme/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,16 +17,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginUser() async {
     setState(() { _isLoading = true; });
-
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      // AuthGate will handle navigation on success
     } on FirebaseAuthException catch (e) {
       if (mounted) {
+        // --- TRANSLATED ---
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Gagal: ${e.message}'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('Login Failed: ${e.message}'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -44,7 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Masuk", style: Theme.of(context).textTheme.titleLarge), automaticallyImplyLeading: false),
+      appBar: AppBar(
+        // title: const Text("Login"), // Title removed as requested
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
@@ -52,24 +58,37 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Selamat Datang Kembali!', style: Theme.of(context).textTheme.headlineSmall),
+                // --- TRANSLATED ---
+                Text('Welcome Back!', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 10),
-                Text('Silakan masuk untuk melanjutkan petualangan Anda.', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
+                Text('Please sign in to continue your adventure.',
+                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
                 const SizedBox(height: 40),
-
-                TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)), keyboardType: TextInputType.emailAddress, style: Theme.of(context).textTheme.bodyLarge),
+                TextFormField(
+                    controller: _emailController,
+                    // --- TRANSLATED ---
+                    decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
+                    keyboardType: TextInputType.emailAddress,
+                    style: Theme.of(context).textTheme.bodyLarge
+                ),
                 const SizedBox(height: 20),
-                TextFormField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)), obscureText: true, style: Theme.of(context).textTheme.bodyLarge),
+                TextFormField(
+                    controller: _passwordController,
+                    // --- TRANSLATED ---
+                    decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                    obscureText: true,
+                    style: Theme.of(context).textTheme.bodyLarge
+                ),
                 const SizedBox(height: 40),
-                
                 _isLoading
                     ? const CircularProgressIndicator(color: AppColors.primary)
-                    : SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _loginUser, child: const Text('Masuk'))),
-                
+                    // --- TRANSLATED ---
+                    : SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _loginUser, child: const Text('Sign In'))),
                 const SizedBox(height: 20),
                 TextButton(
-                  onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SignUpScreen())); }, 
-                  child: const Text('Belum punya akun? Daftar Sekarang'),
+                  onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SignUpScreen())); },
+                  // --- TRANSLATED ---
+                  child: const Text('Don\'t have an account? Sign Up Now'),
                 )
               ],
             ),
