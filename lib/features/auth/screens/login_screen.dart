@@ -125,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                // --- AKHIR TOMBOL BARU ---
 
                 const SizedBox(height: 20), // Sesuaikan spasi jika perlu
                 
