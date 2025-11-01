@@ -60,10 +60,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final Stream<QuerySnapshot> destinasiStream =
         FirebaseFirestore.instance.collection('destinasi').snapshots();
-
+        
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
-    final DocumentReference? userRef = userId != null
-        ? FirebaseFirestore.instance.collection('users').doc(userId)
+    final DocumentReference? userRef = userId != null 
+        ? FirebaseFirestore.instance.collection('users').doc(userId) 
         : null;
 
     return Scaffold(
@@ -85,7 +85,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StreamBuilder<DocumentSnapshot>(
-                      stream: userRef?.snapshots(),
+                      stream: userRef?.snapshots(), 
                       builder: (context, snapshot) {
                         // --- TRANSLATED ---
                         String userName = 'Adventurer'; // Default name
@@ -102,7 +102,7 @@ class HomeScreen extends StatelessWidget {
                            userName = 'Guest';
                            firstLetter = 'G';
                         }
-
+                        
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -111,8 +111,8 @@ class HomeScreen extends StatelessWidget {
                             InkWell(
                               onTap: () {
                                 final TabController? tabController = DefaultTabController.of(context);
-                                if (tabController != null && tabController.index != 4) { // Navigate to Profile tab (index 4)
-                                  tabController.animateTo(4);
+                                if (tabController != null && tabController.index != 3) { // Updated index 3 (Profile)
+                                  tabController.animateTo(3);
                                 } else {
                                   print("TabController not found or already on Profile tab");
                                 }
@@ -166,9 +166,9 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildListDelegate(
                 [
                   _buildSectionTitle(
-                    context,
+                    context, 
                     // --- TRANSLATED ---
-                    'Featured Destinations',
+                    'Featured Destinations', 
                     () => _navigateToExploreTab(context)
                   ),
                   const SizedBox(height: 15),
@@ -192,7 +192,7 @@ class HomeScreen extends StatelessWidget {
                         return ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (context, index) {
+                          itemBuilder: (context, index) { 
                             var doc = snapshot.data!.docs[index];
                             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                             return _buildRecommendationCard(context, data, doc.id);
@@ -217,8 +217,8 @@ class HomeScreen extends StatelessWidget {
     String documentId,
   ) {
     final DestinationModel destination = DestinationModel.fromMap(documentId, data);
-    final String title = destination.nama; // Keep name as is
-    final String location = destination.lokasi; // Keep location as is
+    final String title = destination.nama;
+    final String location = destination.lokasi;
     final String rating = destination.rating.toStringAsFixed(1);
     final String imageUrl = destination.imageUrl;
 
@@ -243,7 +243,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.network(
+                  child: Image.network( 
                     imageUrl,
                     height: 160,
                     width: double.infinity,
@@ -287,7 +287,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-
+            
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               child: Column(
@@ -319,4 +319,7 @@ class HomeScreen extends StatelessWidget {
       ],
     );
   }
+
+  // This widget is no longer used, but if you re-add it, translate "Pantai", "Gunung", etc.
+  // Widget _buildCategoryItem(String name, IconData icon, Color color) { ... }
 }
