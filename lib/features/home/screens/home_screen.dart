@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:wisata_application/data/models/destination_model.dart'; // Assuming destination_model.dart exists
-import 'package:wisata_application/features/detail/screens/detail_screen.dart'; // Assuming detail_screen.dart exists
-import 'package:wisata_application/core/theme/app_colors.dart'; // Assuming app_colors.dart exists
+import 'package:wisata_application/data/models/destination_model.dart';
+import 'package:wisata_application/features/detail/screens/detail_screen.dart';
+import 'package:wisata_application/core/theme/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Future<void> _addFavorite(
-      Map<String, dynamic> destinasiData, String documentId, BuildContext context) async {
+  // --- FUNGSI TOGGLE FAVORITE (BARU) ---
+  Future<void> _toggleFavorite(
+      bool isFavorite,
+      Map<String, dynamic> destinasiData,
+      String documentId,
+      BuildContext context) async {
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
 
     if (userId == null) {
-      // --- TRANSLATED ---
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to add favorites'), backgroundColor: AppColors.error),
+        const SnackBar(content: Text('You must be logged in to manage favorites'), backgroundColor: AppColors.error),
       );
       return;
     }
@@ -27,16 +30,29 @@ class HomeScreen extends StatelessWidget {
         .doc(documentId);
 
     try {
-      await favoriteRef.set(destinasiData);
-      // --- TRANSLATED ---
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Successfully added to favorites!'), backgroundColor: AppColors.success),
-      );
+      if (isFavorite) {
+        // Jika sudah favorit, HAPUS
+        await favoriteRef.delete();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Removed from favorites'), backgroundColor: AppColors.textDark),
+          );
+        }
+      } else {
+        // Jika belum, TAMBAHKAN
+        await favoriteRef.set(destinasiData);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Added to favorites!'), backgroundColor: AppColors.success),
+          );
+        }
+      }
     } catch (e) {
-      // --- TRANSLATED ---
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add favorite: $e'), backgroundColor: AppColors.error),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Action failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
     }
   }
 
@@ -49,21 +65,32 @@ class HomeScreen extends StatelessWidget {
 
   void _navigateToExploreTab(BuildContext context) {
     final TabController? tabController = DefaultTabController.of(context);
-    if (tabController != null && tabController.index != 1) { // Navigate to Explore tab (index 1)
+    if (tabController != null && tabController.index != 1) {
       tabController.animateTo(1);
-    } else {
-       print("TabController not found or already on Explore tab");
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Stream untuk Data Destinasi (Publik)
     final Stream<QuerySnapshot> destinasiStream =
         FirebaseFirestore.instance.collection('destinasi').snapshots();
-        
+
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
-    final DocumentReference? userRef = userId != null 
-        ? FirebaseFirestore.instance.collection('users').doc(userId) 
+    
+    // Stream untuk Profil User (Nama/Foto)
+    final DocumentReference? userRef = userId != null
+        ? FirebaseFirestore.instance.collection('users').doc(userId)
+        : null;
+
+    // Stream untuk Data Favorit User (Pribadi)
+    // Kita butuh ini untuk mengecek apakah item sudah di-like atau belum
+    final Stream<QuerySnapshot>? favoritesStream = userId != null
+        ? FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('favorites')
+            .snapshots()
         : null;
 
     return Scaffold(
@@ -85,46 +112,50 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StreamBuilder<DocumentSnapshot>(
-                      stream: userRef?.snapshots(), 
+                      stream: userRef?.snapshots(),
                       builder: (context, snapshot) {
-                        // --- TRANSLATED ---
-                        String userName = 'Adventurer'; // Default name
+                        String userName = 'Adventurer';
                         String firstLetter = '?';
+                        String? profileImageUrl;
+
                         if (snapshot.hasData && snapshot.data!.exists) {
                           final data = snapshot.data!.data() as Map<String, dynamic>?;
                           final nameFromDb = data?['nama'] as String?;
+                          profileImageUrl = data?['profileImageUrl'] as String?;
+
                           if (nameFromDb != null && nameFromDb.trim().isNotEmpty) {
                             userName = nameFromDb.trim();
                             firstLetter = _getFirstLetter(userName);
                           }
                         } else if (userId == null) {
-                           // --- TRANSLATED ---
                            userName = 'Guest';
                            firstLetter = 'G';
                         }
-                        
+
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // --- TRANSLATED ---
                             Text('Hello, $userName!', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textDark)),
                             InkWell(
                               onTap: () {
                                 final TabController? tabController = DefaultTabController.of(context);
-                                if (tabController != null && tabController.index != 3) { // Updated index 3 (Profile)
+                                if (tabController != null && tabController.index != 3) {
                                   tabController.animateTo(3);
-                                } else {
-                                  print("TabController not found or already on Profile tab");
                                 }
                               },
                               borderRadius: BorderRadius.circular(18),
                               child: CircleAvatar(
                                 radius: 18,
                                 backgroundColor: AppColors.primary.withOpacity(0.8),
-                                child: Text(
-                                  firstLetter,
-                                  style: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
+                                backgroundImage: (profileImageUrl != null)
+                                    ? NetworkImage(profileImageUrl)
+                                    : null,
+                                child: (profileImageUrl == null)
+                                    ? Text(
+                                        firstLetter,
+                                        style: const TextStyle(color: AppColors.textLight, fontWeight: FontWeight.bold, fontSize: 16),
+                                      )
+                                    : null,
                               ),
                             ),
                           ],
@@ -132,7 +163,6 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 5),
-                    // --- TRANSLATED ---
                     Text('Find Your Dream Destination', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMedium)),
                   ],
                 ),
@@ -144,7 +174,6 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: TextField(
                   decoration: InputDecoration(
-                    // --- TRANSLATED ---
                     hintText: 'Search destinations...',
                     prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                     suffixIcon: const Icon(Icons.mic_none_rounded, color: AppColors.textMedium),
@@ -166,41 +195,62 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildListDelegate(
                 [
                   _buildSectionTitle(
-                    context, 
-                    // --- TRANSLATED ---
-                    'Featured Destinations', 
+                    context,
+                    'Featured Destinations',
                     () => _navigateToExploreTab(context)
                   ),
                   const SizedBox(height: 15),
+                  
+                  // --- LOGIKA NESTED STREAM BUILDER UNTUK FAVORIT ---
                   SizedBox(
                     height: 280,
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: destinasiStream,
-                      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator(color: AppColors.primary));
-                        }
-                        if (snapshot.hasError) {
-                          // --- TRANSLATED ---
-                          return Center(child: Text('Failed to load data', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
-                        }
-                        if (snapshot.data!.docs.isEmpty) {
-                          // --- TRANSLATED ---
-                          return Center(child: Text('No destinations yet', style: Theme.of(context).textTheme.bodyLarge));
+                      stream: favoritesStream, // 1. Dengarkan Data Favorit
+                      builder: (context, favSnapshot) {
+                        // Ambil daftar ID yang sudah di-favoritkan
+                        Set<String> favoriteIds = {};
+                        if (favSnapshot.hasData) {
+                          favoriteIds = favSnapshot.data!.docs.map((doc) => doc.id).toSet();
                         }
 
-                        return ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (context, index) { 
-                            var doc = snapshot.data!.docs[index];
-                            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-                            return _buildRecommendationCard(context, data, doc.id);
+                        return StreamBuilder<QuerySnapshot>(
+                          stream: destinasiStream, // 2. Dengarkan Data Destinasi
+                          builder: (context, destSnapshot) {
+                            if (destSnapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                            }
+                            if (destSnapshot.hasError) {
+                              return Center(child: Text('Failed to load data', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
+                            }
+                            if (destSnapshot.data!.docs.isEmpty) {
+                              return Center(child: Text('No destinations yet', style: Theme.of(context).textTheme.bodyLarge));
+                            }
+
+                            return ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: destSnapshot.data!.docs.length,
+                              itemBuilder: (context, index) {
+                                var doc = destSnapshot.data!.docs[index];
+                                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                                
+                                // Cek apakah ID dokumen ini ada di daftar favorit
+                                bool isFavorite = favoriteIds.contains(doc.id);
+
+                                return _buildRecommendationCard(
+                                  context, 
+                                  data, 
+                                  doc.id, 
+                                  isFavorite // Kirim status favorit ke widget kartu
+                                );
+                              },
+                            );
                           },
                         );
                       },
                     ),
                   ),
+                  // --- AKHIR LOGIKA ---
+                  
                   const SizedBox(height: 20),
                 ],
               ),
@@ -215,6 +265,7 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> data,
     String documentId,
+    bool isFavorite, // Menerima status favorit
   ) {
     final DestinationModel destination = DestinationModel.fromMap(documentId, data);
     final String title = destination.nama;
@@ -243,7 +294,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.network( 
+                  child: Image.network(
                     imageUrl,
                     height: 160,
                     width: double.infinity,
@@ -272,22 +323,35 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                
+                // --- TOMBOL FAVORIT DINAMIS ---
                 Positioned(
                   top: 10,
                   right: 10,
                   child: Container(
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9), 
+                      shape: BoxShape.circle, 
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]
+                    ),
                     child: IconButton(
-                      icon: const Icon(Icons.favorite_border_rounded, color: Colors.redAccent),
-                      onPressed: () { _addFavorite(data, documentId, context); },
-                      // --- TRANSLATED ---
-                      tooltip: 'Add to Favorites',
+                      // Ubah Ikon berdasarkan status
+                      icon: Icon(
+                        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
+                        color: isFavorite ? Colors.red : Colors.redAccent, // Merah penuh jika favorit
+                      ),
+                      onPressed: () { 
+                        // Panggil fungsi toggle
+                        _toggleFavorite(isFavorite, data, documentId, context); 
+                      },
+                      tooltip: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
                     ),
                   ),
                 ),
+                // --- AKHIR TOMBOL ---
               ],
             ),
-            
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               child: Column(
@@ -314,12 +378,8 @@ class HomeScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: Theme.of(context).textTheme.titleLarge),
-        // --- TRANSLATED ---
         TextButton(onPressed: onViewAll, child: const Text('View All')),
       ],
     );
   }
-
-  // This widget is no longer used, but if you re-add it, translate "Pantai", "Gunung", etc.
-  // Widget _buildCategoryItem(String name, IconData icon, Color color) { ... }
 }
