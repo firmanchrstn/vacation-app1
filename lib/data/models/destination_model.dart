@@ -4,7 +4,10 @@ class DestinationModel {
   final String lokasi;
   final double rating;
   final String imageUrl;
-  final String deskripsi; // <-- TAMBAHKAN INI
+  final String deskripsi;
+  // --- TAMBAHAN KOORDINAT ---
+  final double lat;
+  final double lng;
 
   DestinationModel({
     required this.id,
@@ -12,7 +15,10 @@ class DestinationModel {
     required this.lokasi,
     required this.rating,
     required this.imageUrl,
-    required this.deskripsi, // <-- TAMBAHKAN INI
+    required this.deskripsi,
+    // Default 0.0 jika data belum ada di Firestore
+    this.lat = 0.0, 
+    this.lng = 0.0,
   });
 
   factory DestinationModel.fromMap(String id, Map<String, dynamic> map) {
@@ -22,7 +28,10 @@ class DestinationModel {
       lokasi: map['lokasi'] ?? 'Tidak Ada Lokasi',
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0, 
       imageUrl: map['imageUrl'] ?? 'https://via.placeholder.com/400x300',
-      deskripsi: map['deskripsi'] ?? 'Deskripsi belum tersedia.', // <-- TAMBAHKAN INI
+      deskripsi: map['deskripsi'] ?? 'Deskripsi belum tersedia.',
+      // Ambil lat & lng dari Firestore
+      lat: (map['lat'] as num?)?.toDouble() ?? 0.0,
+      lng: (map['lng'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -32,7 +41,9 @@ class DestinationModel {
       'lokasi': lokasi,
       'rating': rating,
       'imageUrl': imageUrl,
-      'deskripsi': deskripsi, // <-- TAMBAHKAN INI
+      'deskripsi': deskripsi,
+      'lat': lat,
+      'lng': lng,
     };
   }
 }

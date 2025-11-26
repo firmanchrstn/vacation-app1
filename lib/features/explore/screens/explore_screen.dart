@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:wisata_application/data/models/destination_model.dart'; // Assuming destination_model.dart exists
-import 'package:wisata_application/features/detail/screens/detail_screen.dart'; // Assuming detail_screen.dart exists
-import 'package:wisata_application/core/theme/app_colors.dart'; // Assuming app_colors.dart exists
+import 'package:wisata_application/data/models/destination_model.dart';
+import 'package:wisata_application/features/detail/screens/detail_screen.dart';
+import 'package:wisata_application/core/theme/app_colors.dart';
+import 'package:wisata_application/core/widgets/app_shimmer.dart'; // Import Shimmer
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -22,7 +23,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onSearchChanged() {
-    setState(() { _searchQuery = _searchController.text; });
+    String text = _searchController.text;
+    if (text.length >= 3) {
+      // Kapitalisasi huruf pertama agar cocok dengan data Firestore
+      setState(() { _searchQuery = text[0].toUpperCase() + text.substring(1); });
+    } else {
+      if (_searchQuery.isNotEmpty) setState(() { _searchQuery = ''; });
+    }
   }
 
   @override
@@ -34,19 +41,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Firestore query remains the same
     Query destinasiQuery = FirebaseFirestore.instance.collection('destinasi');
 
     if (_searchQuery.isNotEmpty) {
+      // --- PERBAIKAN DI SINI ---
       destinasiQuery = destinasiQuery
           .where('nama', isGreaterThanOrEqualTo: _searchQuery)
-          .where('nama', isLessThan: _searchQuery + 'z');
+          .where('nama', isLessThan: '${_searchQuery}z'); // Gunakan kurung kurawal {}
+      // -------------------------
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        // --- TRANSLATED ---
         title: Text('Explore Destinations', style: Theme.of(context).textTheme.titleLarge),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(70.0),
@@ -54,9 +61,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
             child: TextField(
               controller: _searchController,
+              textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                // --- TRANSLATED ---
-                hintText: 'Search destination name...',
+                hintText: 'Search (min. 3 letters)...',
                 prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                 filled: true,
                 fillColor: AppColors.textLight,
@@ -73,16 +80,57 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: destinasiQuery.snapshots(),
         builder: (context, snapshot) {
+          // --- SHIMMER LOADING LIST ---
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              itemCount: 6, 
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  height: 100,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 10),
+                      const AppShimmer(width: 80, height: 80, borderRadius: 12),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const AppShimmer(width: 150, height: 18, borderRadius: 4),
+                            const SizedBox(height: 8),
+                            const AppShimmer(width: 100, height: 14, borderRadius: 4),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
           }
-          if (snapshot.hasError) {
-            // --- TRANSLATED ---
-            return Center(child: Text('Error: ${snapshot.error}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
-          }
+          
+          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)));
+          
           if (snapshot.data!.docs.isEmpty) {
-            // --- TRANSLATED ---
-            return Center(child: Text('Destination not found.', style: Theme.of(context).textTheme.bodyLarge));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off_rounded, size: 60, color: Colors.grey[400]),
+                  const SizedBox(height: 10),
+                  Text(
+                    _searchQuery.isNotEmpty 
+                        ? 'No destinations found for "$_searchQuery"'
+                        : 'No destinations available.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
           }
 
           return ListView.builder(
@@ -100,14 +148,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Helper widget to build each destination tile in the list
   Widget _buildDestinasiTile(BuildContext context, DestinationModel destination) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // Navigate to DetailScreen, assuming DetailScreen is also translated or uses localization
           Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailScreen(destination: destination)));
         },
         child: Padding(
@@ -116,10 +162,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
-                child: Image.network(
-                  destination.imageUrl,
-                  width: 80, height: 80, fit: BoxFit.cover,
-                  errorBuilder: (context, url, error) => Container(width: 80, height: 80, color: AppColors.textMedium.withOpacity(0.1), child: const Icon(Icons.broken_image_rounded, color: AppColors.textMedium, size: 40)),
+                child: Hero(
+                  tag: destination.imageUrl,
+                  child: Image.network(
+                    destination.imageUrl,
+                    width: 80, height: 80, fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const AppShimmer(width: 80, height: 80, borderRadius: 0);
+                    },
+                    errorBuilder: (context, url, error) => Container(width: 80, height: 80, color: AppColors.textMedium.withOpacity(0.1), child: const Icon(Icons.broken_image_rounded, color: AppColors.textMedium, size: 40)),
+                  ),
                 ),
               ),
               const SizedBox(width: 15),
@@ -127,12 +180,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(destination.nama, style: Theme.of(context).textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis), // Keep name as is
+                    Text(destination.nama, style: Theme.of(context).textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 5),
                     Row(children: [
                       const Icon(Icons.location_on_rounded, size: 16, color: AppColors.textMedium),
                       const SizedBox(width: 5),
-                      Expanded(child: Text(destination.lokasi, style: Theme.of(context).textTheme.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis)), // Keep location as is
+                      Expanded(child: Text(destination.lokasi, style: Theme.of(context).textTheme.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ]),
                   ],
                 ),

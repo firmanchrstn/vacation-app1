@@ -8,7 +8,7 @@ import 'package:wisata_application/core/theme/app_colors.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // --- FUNGSI TOGGLE FAVORITE (BARU) ---
+  // --- FUNGSI TOGGLE FAVORITE ---
   Future<void> _toggleFavorite(
       bool isFavorite,
       Map<String, dynamic> destinasiData,
@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
 
     try {
       if (isFavorite) {
-        // Jika sudah favorit, HAPUS
+        // Hapus (Unlike)
         await favoriteRef.delete();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -39,7 +39,7 @@ class HomeScreen extends StatelessWidget {
           );
         }
       } else {
-        // Jika belum, TAMBAHKAN
+        // Tambah (Like)
         await favoriteRef.set(destinasiData);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -72,19 +72,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Stream untuk Data Destinasi (Publik)
+    // 1. Stream Destinasi
     final Stream<QuerySnapshot> destinasiStream =
         FirebaseFirestore.instance.collection('destinasi').snapshots();
-
+        
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
-    
-    // Stream untuk Profil User (Nama/Foto)
-    final DocumentReference? userRef = userId != null
-        ? FirebaseFirestore.instance.collection('users').doc(userId)
+    final DocumentReference? userRef = userId != null 
+        ? FirebaseFirestore.instance.collection('users').doc(userId) 
         : null;
 
-    // Stream untuk Data Favorit User (Pribadi)
-    // Kita butuh ini untuk mengecek apakah item sudah di-like atau belum
+    // 2. Stream Favorit (untuk cek status)
     final Stream<QuerySnapshot>? favoritesStream = userId != null
         ? FirebaseFirestore.instance
             .collection('users')
@@ -112,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StreamBuilder<DocumentSnapshot>(
-                      stream: userRef?.snapshots(),
+                      stream: userRef?.snapshots(), 
                       builder: (context, snapshot) {
                         String userName = 'Adventurer';
                         String firstLetter = '?';
@@ -122,7 +119,6 @@ class HomeScreen extends StatelessWidget {
                           final data = snapshot.data!.data() as Map<String, dynamic>?;
                           final nameFromDb = data?['nama'] as String?;
                           profileImageUrl = data?['profileImageUrl'] as String?;
-
                           if (nameFromDb != null && nameFromDb.trim().isNotEmpty) {
                             userName = nameFromDb.trim();
                             firstLetter = _getFirstLetter(userName);
@@ -131,7 +127,7 @@ class HomeScreen extends StatelessWidget {
                            userName = 'Guest';
                            firstLetter = 'G';
                         }
-
+                        
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -195,26 +191,25 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildListDelegate(
                 [
                   _buildSectionTitle(
-                    context,
-                    'Featured Destinations',
+                    context, 
+                    'Featured Destinations', 
                     () => _navigateToExploreTab(context)
                   ),
                   const SizedBox(height: 15),
                   
-                  // --- LOGIKA NESTED STREAM BUILDER UNTUK FAVORIT ---
+                  // --- NESTED STREAM BUILDER UNTUK CEK FAVORIT ---
                   SizedBox(
                     height: 280,
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: favoritesStream, // 1. Dengarkan Data Favorit
+                      stream: favoritesStream, // 1. Dengarkan Favorit
                       builder: (context, favSnapshot) {
-                        // Ambil daftar ID yang sudah di-favoritkan
                         Set<String> favoriteIds = {};
                         if (favSnapshot.hasData) {
                           favoriteIds = favSnapshot.data!.docs.map((doc) => doc.id).toSet();
                         }
 
                         return StreamBuilder<QuerySnapshot>(
-                          stream: destinasiStream, // 2. Dengarkan Data Destinasi
+                          stream: destinasiStream, // 2. Dengarkan Destinasi
                           builder: (context, destSnapshot) {
                             if (destSnapshot.connectionState == ConnectionState.waiting) {
                               return Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -229,18 +224,18 @@ class HomeScreen extends StatelessWidget {
                             return ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount: destSnapshot.data!.docs.length,
-                              itemBuilder: (context, index) {
+                              itemBuilder: (context, index) { 
                                 var doc = destSnapshot.data!.docs[index];
                                 Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
                                 
-                                // Cek apakah ID dokumen ini ada di daftar favorit
+                                // Cek apakah di-favoritkan
                                 bool isFavorite = favoriteIds.contains(doc.id);
 
                                 return _buildRecommendationCard(
                                   context, 
                                   data, 
                                   doc.id, 
-                                  isFavorite // Kirim status favorit ke widget kartu
+                                  isFavorite // Kirim status
                                 );
                               },
                             );
@@ -249,7 +244,7 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  // --- AKHIR LOGIKA ---
+                  // ---------------------------------------------
                   
                   const SizedBox(height: 20),
                 ],
@@ -265,7 +260,7 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> data,
     String documentId,
-    bool isFavorite, // Menerima status favorit
+    bool isFavorite, // Terima status favorit
   ) {
     final DestinationModel destination = DestinationModel.fromMap(documentId, data);
     final String title = destination.nama;
@@ -294,7 +289,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.network(
+                  child: Image.network( 
                     imageUrl,
                     height: 160,
                     width: double.infinity,
@@ -335,23 +330,22 @@ class HomeScreen extends StatelessWidget {
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 2))]
                     ),
                     child: IconButton(
-                      // Ubah Ikon berdasarkan status
+                      // Ikon berubah warna dan bentuk
                       icon: Icon(
                         isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
-                        color: isFavorite ? Colors.red : Colors.redAccent, // Merah penuh jika favorit
+                        color: isFavorite ? Colors.red : Colors.redAccent, 
                       ),
                       onPressed: () { 
-                        // Panggil fungsi toggle
                         _toggleFavorite(isFavorite, data, documentId, context); 
                       },
                       tooltip: isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
                     ),
                   ),
                 ),
-                // --- AKHIR TOMBOL ---
+                // -----------------------------
               ],
             ),
-
+            
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               child: Column(
