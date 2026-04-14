@@ -6,48 +6,87 @@
 
 ---
 
-## Key Features
+## Developer
+
+**Firman Christian Purba**  
+Information Systems Student  
+Focused on Mobile Development and UI/UX Design  
+
+---
+
+## Support
+
+If you find this project useful:
+
+- Star this repository  
+- Fork it  
+- Share it  
+
+---
+
+## Why This Project Matters
+
+This project is not just an application — it demonstrates:
+
+- Real-world Flutter development skills  
+- Clean and scalable architecture  
+- Strong UI/UX design principles  
+- Firebase backend integration  
+- Portfolio-ready production concept  
+
+---
+
+## User Flow
+
+1. User opens the application  
+2. Authenticates (Login/Register)  
+3. Browses destinations  
+4. Views detailed information  
+5. Saves favorites  
+6. Manages profile  
+
+---
+
+## Features
 
 - **User Authentication**  
-  Secure login and registration powered by **Firebase Auth**.
+  Secure login and registration powered by Firebase Authentication  
 
 - **Destination Discovery**  
-  Explore curated travel spots based on categories and popularity.
+  Explore curated travel destinations based on categories and popularity  
 
-- **In-depth Details**  
-  Comprehensive information including descriptions, geographic locations, and high-quality image galleries.
+- **Detailed Information**  
+  Descriptions, geographic locations, and image galleries  
 
-- **Personalized Favorites**  
-  Save and manage your bucket list with a dedicated "Favorites" system.
+- **Favorites System**  
+  Save and manage preferred destinations  
 
 - **Profile Management**  
-  Customizable user profiles with image upload capabilities via **Firebase Storage**.
+  User profile customization with image upload support  
 
-- **Premium UX/UI**  
-  Smooth user experience featuring **Shimmer animations** for loading states and a fully responsive design.
+- **User Experience**  
+  Smooth interaction with responsive layout and loading states  
 
 ---
 
 ## Tech Stack
 
-This project implements industry-standard technologies:
+### Core Framework
+- Flutter  
+- Dart  
 
-- **Core Framework**
-  - Flutter
-  - Dart
+### Backend Services (Firebase)
+- `firebase_core` and `firebase_auth` for authentication  
+- `cloud_firestore` for real-time database  
+- `firebase_storage` for file storage  
 
-- **Backend Services (Firebase)**
-  - `firebase_core` & `firebase_auth` → Identity and Access Management
-  - `cloud_firestore` → Real-time NoSQL Database
-  - `firebase_storage` → Cloud file storage
+### Local Storage
+- `shared_preferences` for lightweight caching  
 
-- **Local Persistence**
-  - `shared_preferences` for lightweight caching
-
-- **UI/UX Utilities**
-  - `image_picker` → Media handling
-  - `url_launcher` → External navigation
-  - `shimmer` → Skeleton loading effects
+### UI Utilities
+- `image_picker` for media handling  
+- `url_launcher` for external navigation  
+- `shimmer` for loading effects  
 
 ---
 
@@ -55,15 +94,24 @@ This project implements industry-standard technologies:
 
 ### Prerequisites
 
-- Flutter SDK (^3.8.1)
-- Dart SDK
-- Firebase Project Credentials
+- Flutter SDK (>= 3.8.1)  
+- Dart SDK  
+- Firebase project configuration  
 
 ---
 
-### Installation
-
-1. **Clone the repository**
+## Installation
 
 ```bash
 git clone https://github.com/firmanchrstn/vacation-app1.git
+cd vacation-app1
+flutter pub get
+flutter run
+
+lib/
+├── core/        # Theme, constants, reusable components
+├── data/        # Models and repository layer
+├── features/    # Feature modules (Auth, Home, Detail, Profile)
+└── main.dart
+
+---
